@@ -1,7 +1,15 @@
-const { Op } = require('sequelize');
+const { Op, fn, col, Sequelize } = require('sequelize');
 const { DayPlans, FieldMeetingDetails, CheckInOutLogs } = require('../models/index');
-const { raw } = require('mysql2');
+const ImageKit = require('imagekit');
+const moment = require('moment');
 require('dotenv').config();
+
+// SDK initialization
+var imagekit = new ImageKit({
+  publicKey: "public_5J27hETdJ/Qqdmt102EjAbUOOd4=",
+  privateKey: "private_rI5739WSAbOayuMXnydJW74H40k=",
+  urlEndpoint: "https://ik.imagekit.io/rw05vsmbv"
+});
 
 const GetAllMeetings = async (req, res) => {
   try {
@@ -14,6 +22,10 @@ const GetAllMeetings = async (req, res) => {
         {
           model: CheckInOutLogs,
           as: 'checkInOutLogs'
+        },
+        {
+          model: FieldMeetingDetails,
+          as: 'meetingDetails'
         }
       ]
     });
@@ -131,32 +143,94 @@ const CheckOutMeeting = async (req, res) => {
 
 const UpdateMeeting = async (req, res) => {
   try {
+    console.log(req.body, 'check the body elements');
 
-    console.log(req.body, 'meeting details')
+    const {
+      companyName,
+      contactNumber,
+      industry,
+      product,
+      amount,
+      clientType,
+      meetingDescription,
+      meetingType,
+      nextFollowUpDate,
+    } = req.body;
+
+    let meetingImage = null;
+
+    // Process file buffer
+    if (req.file) {
+      const fileBuffer = req.file.buffer;
+
+      // Upload to ImageKit
+      const uploadResponse = await imagekit.upload({
+        file: fileBuffer, // Use the file buffer
+        fileName: req.file.originalname, // Original file name
+      });
+
+      meetingImage = uploadResponse.url;
+    }
 
     const meetingDetails = {
       day_plan_id: req.body.meetingId,
-      company_name: req.body.companyName,
-      contact_number: req.body.mobileNumber,
-      industry: req.body.industry,
-      client_type: req.body.client_type,
-      meeting_description: req.body.meeting_description,
-      meeting_type: req.body.meeting_type,
+      company_name: companyName,
+      contact_number: contactNumber,
+      industry,
+      product,
+      amount,
+      client_type: clientType,
+      meeting_description: meetingDescription,
+      meeting_type: meetingType,
       image: meetingImage,
-      follow_up_date: 'follow_up_date'
-    }
+      follow_up_date: nextFollowUpDate,
+    };
 
-    console.log(meetingDetails)
+    // console.log(meetingDetails);
 
-    // Create a new meeting entry in FieldMeetings table
-    // await FieldMeetingDetails.create(meetingDetails);
+    await FieldMeetingDetails.create(meetingDetails);
 
     res.status(200).json({ message: 'Meeting updated successfully' });
   } catch (error) {
     console.error('Error updating meeting:', error);
-    res.status(500).json({ message: 'Error updating meeting' });
+    res.status(500).json({ message: 'Error updating meeting', error: error.message });
   }
 };
 
+const GetAllFollowUps = async (req, res) => {
+  try {
+    const { date } = req.query;
+    const id = req.session.user.id;
 
-module.exports = { AddMeeting, GetAllMeetings, CheckInMeeting, CheckOutStatus, CheckOutMeeting, UpdateMeeting }
+    let DayPlansId = await DayPlans.findAll({
+      raw: true,
+      attributes: ['id'],
+      where: { added_by: id }
+    })
+
+    DayPlansId = DayPlansId.map((item) => item.id)
+
+    const formattedDate = moment(date).format('YYYY-MM-DD');
+
+    const AllFollowUps = await FieldMeetingDetails.findAll({
+      raw: true,
+      where: {
+        day_plan_id: DayPlansId,
+        [Op.and]: [
+          Sequelize.where(
+            fn('DATE', col('follow_up_date')),
+            formattedDate
+          )
+        ]
+      },
+      attributes: ['id', 'company_name', 'contact_number', 'product', 'industry', 'meeting_description']
+    });
+
+    res.status(200).json({ message: 'Followps retreated successfully', followUps : AllFollowUps });
+  } catch (error) {
+    console.error('Error getting followups:', error);
+    res.status(500).json({ message: 'Error getting followups', error: error.message });
+  }
+};
+
+module.exports = { AddMeeting, GetAllMeetings, CheckInMeeting, CheckOutStatus, CheckOutMeeting, UpdateMeeting, GetAllFollowUps }

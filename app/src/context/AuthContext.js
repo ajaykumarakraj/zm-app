@@ -14,7 +14,6 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const checkToken = async () => {
       const tokenData = await AsyncStorage.getItem('Token');
-      console.log(tokenData, 'check token');
 
       if (tokenData) {
         const { token, expiryTime } = JSON.parse(tokenData);
@@ -42,6 +41,11 @@ export const AuthProvider = ({ children }) => {
     setIsLoggedIn(true);
   };
 
+  const userInfo = async (info) => {
+    console.log(info, 'reaching?')
+    await AsyncStorage.setItem('user', JSON.stringify({ info }));
+  }
+
 
   const logout = async () => {
     await AsyncStorage.clear();
@@ -57,7 +61,7 @@ export const AuthProvider = ({ children }) => {
 
 
   return (
-    <AuthContext.Provider value={{ isLoggedIn, loading, login, logout }}>
+    <AuthContext.Provider value={{ isLoggedIn, loading, login, logout, userInfo }}>
       {children}
     </AuthContext.Provider>
   );

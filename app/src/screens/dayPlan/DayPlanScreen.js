@@ -7,7 +7,9 @@ import axios from 'axios';
 import { API_URL } from '@env';
 
 
-const FieldMeetingScreen = ({ navigation }) => {
+const DayPlanScreen = ({ navigation }) => {
+  const apiurl = 'http://192.168.1.5:3000'
+
   const [meetings, setMeetings] = useState([]);
   const [loading, setLoading] = useState(false);
   const [navigating, setNavigating] = useState(false);
@@ -17,8 +19,8 @@ const FieldMeetingScreen = ({ navigation }) => {
   const fetchMeetings = async () => {
     setLoading(true); // Start loading
     try {
-      console.log(`${API_URL}/field-meeting/get-all`, 'see')
-      const response = await axios.get(`${API_URL}/field-meeting/get-all`);
+      console.log(`${apiurl}/field-meeting/get-all`, 'see')
+      const response = await axios.get(`${apiurl}/field-meeting/get-all`);
       const meetings = response.data.data; // Assuming response.data.data is an array
 
 
@@ -243,7 +245,4 @@ const styles = StyleSheet.create({
 });
 
 
-export default FieldMeetingScreen;
-
-
-
+export default DayPlanScreen;

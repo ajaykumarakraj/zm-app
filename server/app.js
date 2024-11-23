@@ -2,8 +2,9 @@ const express = require('express')
 const bodyParser = require('body-parser');
 const path = require('path');
 const cors = require('cors');
-const AuthRoutes = require('./src/routes/auth')
-const FieldRoutes = require('./src/routes/field')
+const AuthRoutes = require('./src/routes/authRoutes')
+const FieldRoutes = require('./src/routes/fieldRoutes')
+const EmployeeRoutes = require('./src/routes/employeeRoutes')
 const sessionMiddleware = require('./utilis/session');
 const { Connection } = require('./src/models');
 const app = express()
@@ -34,7 +35,7 @@ app.get('/', (req, res) => {
 
 app.use('/auth', AuthRoutes);
 app.use('/field-meeting', FieldRoutes);
-
+app.use('/employee', EmployeeRoutes);
 
 // Start the server
 Connection().then(() => {

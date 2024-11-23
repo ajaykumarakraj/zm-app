@@ -1,14 +1,30 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert, Image } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import LinearGradient from 'react-native-linear-gradient';
 import { useAuth } from '../context/AuthContext';
 import { CommonActions } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 
 const ProfileScreen = ({ navigation }) => {
+
+  const [user, SetUser] = useState('')
   const { logout } = useAuth();
 
+  useEffect(() => {
+    const fetchUserInfo = async () => {
+      try {
+        const userInfoCheck = await AsyncStorage.getItem('user');
+        const ParseduserInfoCheck = JSON.parse(userInfoCheck) 
+        SetUser(ParseduserInfoCheck.info);
+      } catch (error) {
+        console.error('Error fetching user info:', error);
+      }
+    };
+
+    fetchUserInfo();
+  }, []);
 
   const handleLogout = async () => {
     Alert.alert(
@@ -20,7 +36,7 @@ const ProfileScreen = ({ navigation }) => {
           text: "OK",
           onPress: async () => {
             await logout();
-           
+
             // Reset the navigation stack to only have the Login screen
             navigation.dispatch(
               CommonActions.reset({
@@ -37,20 +53,20 @@ const ProfileScreen = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.userName}>John Doe</Text>
-      <Text style={styles.userEmail}>johndoe@example.com</Text>
+      <Text style={styles.userName}>{user.userName}</Text>
+      {/* <Text style={styles.userEmail}>johndoe@example.com</Text> */}
 
 
       {/* Profile Information Card */}
       <LinearGradient colors={['#fdfbfb', '#ebedee']} style={styles.infoCard}>
         <View style={styles.infoRow}>
           <Icon name="phone" size={24} color="#9A9A9A" />
-          <Text style={styles.infoText}>+123 456 7890</Text>
+          <Text style={styles.infoText}>{user.phoneNumber}</Text>
         </View>
         <View style={styles.divider} />
         <View style={styles.infoRow}>
           <Icon name="location-on" size={24} color="#9A9A9A" />
-          <Text style={styles.infoText}>San Francisco, CA</Text>
+        <Text style={styles.infoText}>123, Address, India</Text>
         </View>
       </LinearGradient>
 

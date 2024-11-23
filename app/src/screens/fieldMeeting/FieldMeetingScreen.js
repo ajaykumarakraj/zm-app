@@ -10,7 +10,7 @@ import { PermissionsAndroid, Platform } from 'react-native';
 
 
 const FieldMeetingScreen = ({ navigation }) => {
-
+  const apiurl = 'http://192.168.1.5:3000'
 
   const [meetings, setMeetings] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -47,7 +47,7 @@ const FieldMeetingScreen = ({ navigation }) => {
   const fetchMeetings = async () => {
     setLoading(true);
     try {
-      const response = await axios.get(`${API_URL}/field-meeting/get-all`);
+      const response = await axios.get(`${apiurl}/field-meeting/get-all`);
       const meetings = response.data.data;
       setMeetings(meetings);
     } catch (error) {
@@ -111,16 +111,13 @@ const FieldMeetingScreen = ({ navigation }) => {
 
     try {
       const userLocation = await getUserLocation(dayPlanId, 'checkIn'); // Wait for the location
-      console.log(userLocation, "check this  hand  to  hand")
-
 
       if (userLocation) {
-        const response = await axios.post(`${API_URL}/field-meeting/check-in`, {
+        const response = await axios.post(`${apiurl}/field-meeting/check-in`, {
           day_plan_id: dayPlanId,
           location: userLocation,
         });
 
-        console.log(response.data.success, 'Check-in successful');
         fetchMeetings(); // Refresh meetings after check-in
       }
       // Proceed with check-in if location is available
@@ -138,7 +135,7 @@ const FieldMeetingScreen = ({ navigation }) => {
 
     try {
       // Step 1: Check the check-in status via the API
-      const checkResponse = await axios.get(`${API_URL}/field-meeting/check-in-status/${dayPlanId}`);
+      const checkResponse = await axios.get(`${apiurl}/field-meeting/check-in-status/${dayPlanId}`);
 
 
       if (checkResponse.data.isCheckedIn) {
@@ -151,13 +148,11 @@ const FieldMeetingScreen = ({ navigation }) => {
 
         if (userLocation) {
           // Proceed with checkout if location is available
-          const response = await axios.post(`${API_URL}/field-meeting/check-out`, {
+          const response = await axios.post(`${apiurl}/field-meeting/check-out`, {
             day_plan_id: dayPlanId,
             location: userLocation,
           });
 
-
-          console.log(response.data.success, 'Check-out successful');
           fetchMeetings(); // Refresh meetings after check-out
         }
         // No need for an alert here, it's handled in getUserLocation
@@ -171,12 +166,6 @@ const FieldMeetingScreen = ({ navigation }) => {
     }
   };
 
-
-  const handleUpdate = async () => {
-    navigation.navigate('UpdateMeeting')
-  }
-
-
   const renderMeetingItem = ({ item }) => (
     <View style={styles.meetingItem}>
       <View style={styles.meetingDetails}>
@@ -186,7 +175,6 @@ const FieldMeetingScreen = ({ navigation }) => {
       <Text style={styles.meetingTime}>
         {new Date(item.meetingTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
       </Text>
-
 
       <View style={styles.buttonContainer}>
         <TouchableOpacity
@@ -232,17 +220,17 @@ const FieldMeetingScreen = ({ navigation }) => {
 
 
         <TouchableOpacity
-          style={styles.button}
-          onPress={() => handleUpdate(item.id)}
-          disabled={loadingIds.checkOut === item.id} // Disable when loading
+          style={[styles.button, item["meetingDetails.createdAt"] ? styles.updatedButton : null]}
+          onPress={() => navigation.navigate('UpdateMeeting', { meetingId: item.id })}
+          disabled={item["meetingDetails.createdAt"] ? true : false}
         >
           <LinearGradient
-            colors={['#4CAF50', '#388E3C']}
+            colors={!!item["meetingDetails.createdAt"] ? ['#4CAF50', '#388E3C'] : ['#ff6347', '#ff4500']}
             style={styles.gradientButton}
           >
             <>
               <Icon name="create-outline" size={20} color="#fff" />
-              <Text style={styles.buttonText}>Update</Text>
+              <Text style={styles.buttonText}>{item["meetingDetails.createdAt"] ? 'Updated' : 'Update'}</Text>
             </>
           </LinearGradient>
         </TouchableOpacity>
@@ -364,6 +352,10 @@ const styles = StyleSheet.create({
   checkedOutButton: {
     opacity: 0.6,
   },
+  updatedButton: {
+    opacity: 0.6
+  }
+
 });
 
 

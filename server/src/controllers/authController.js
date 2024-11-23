@@ -47,7 +47,7 @@ const Login = async (req, res) => {
 
         // Set session data for the user
         req.session.user = user;
-        res.json({ message: 'Login successful', token });
+        res.json({ message: 'Login successful', token, user });
     } catch (error) {
         console.error('Error during login:', error);
         res.status(500).json({ message: 'An error occurred during login' });

@@ -6,10 +6,10 @@ import UpdateMeetingScreen from '../screens/fieldMeeting/UpdateMeetingScreen';
 import DayPlanScreen from '../screens/dayPlan/DayPlanScreen';
 import AddDayPlanScreen from '../screens/dayPlan/AddDayPlanScreen';
 import PlanDetailScreen from '../screens/dayPlan/PlanDetailScreen';
-
+import EmployeeReportScreen from '../screens/EmployeeReportScreen';
+import SalesReportScreen from '../screens/SalesReportScreen';
 
 const Stack = createStackNavigator();
-
 
 const NavProStack = () => (
   <Stack.Navigator>
@@ -19,6 +19,8 @@ const NavProStack = () => (
     <Stack.Screen name="DayPlans" component={DayPlanScreen} options={{ headerShown: false }} />
     <Stack.Screen name="AddDayPlan" component={AddDayPlanScreen} options={{ headerShown: false }} />
     <Stack.Screen name="PlanDetail" component={PlanDetailScreen} options={{ headerShown: false }} />
+    <Stack.Screen name="EmployeeReport" component={EmployeeReportScreen} options={{ headerShown: false }} />
+    <Stack.Screen name="SalesReport" component={SalesReportScreen} options={{ headerShown: false }} />
   </Stack.Navigator>
 );
 

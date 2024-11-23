@@ -9,8 +9,8 @@ import { API_URL } from '@env';
 
 
 const LoginScreen = () => {
-  const { login } = useAuth();
-
+  const { login, userInfo } = useAuth();
+  const apiurl = 'http://192.168.1.5:3000'
 
   const [phoneNumber, setPhoneNumber] = useState('');
   const [password, setPassword] = useState('');
@@ -48,15 +48,17 @@ const LoginScreen = () => {
 
     try {
       console.log(`${API_URL}/auth/login`)
-      const response = await axios.post(`${API_URL}/auth/login`, {
+      const response = await axios.post(`${apiurl}/auth/login`, {
         phoneNumber,
         password,
         deviceID,
       });
 
       const token = response.data.token;
+      const info = response.data.user;
       console.log('login successfully')
       await login(token);
+      await userInfo(info);
     } catch (error) {
       console.error(error);
       Alert.alert('Error', error.response?.data?.message || 'Login failed');

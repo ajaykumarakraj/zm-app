@@ -9,6 +9,8 @@ import { API_URL } from '@env';
 
 
 const AddFieldMeetingScreen = ({ navigation }) => {
+  const apiurl = 'http://192.168.1.5:3000'
+
   const [companyName, setCompanyName] = useState('');
   const [clientName, setClientName] = useState('');
   const [mobileNumber, setMobileNumber] = useState('');
@@ -61,7 +63,7 @@ const AddFieldMeetingScreen = ({ navigation }) => {
     };
 
     try {
-      const response = await axios.post(`${API_URL}/field-meeting/add`, meetingData, {
+      const response = await axios.post(`${apiurl}/field-meeting/add`, meetingData, {
         headers: { 'Content-Type': 'application/json' },
       });
       Alert.alert('Meeting Added', response.data.message);
