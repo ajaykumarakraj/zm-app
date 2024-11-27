@@ -9,7 +9,7 @@ import { API_URL } from '@env';
 
 
 const AddFieldMeetingScreen = ({ navigation }) => {
-  const apiurl = 'http://192.168.1.5:3000'
+  const apiurl = 'http://192.168.1.13:3000'
 
   const [companyName, setCompanyName] = useState('');
   const [clientName, setClientName] = useState('');
@@ -23,8 +23,6 @@ const AddFieldMeetingScreen = ({ navigation }) => {
   const [isAddMeeting, setIsAddMeeting] = useState(true);
 
 
-  // console.log(location,  "see")
-  // console.log(isAddMeeting,  "now see")
   // Validate form fields
   const validateForm = () => {
     if (!companyName || !clientName || !mobileNumber || !address || !location) {

@@ -7,7 +7,7 @@ import { launchImageLibrary } from 'react-native-image-picker';
 import axios from 'axios';
 
 const UpdateScreen = ({ navigation }) => {
-  const apiurl = 'http://192.168.1.5:3000'
+  const apiurl = 'http://192.168.1.13:3000'
   const route = useRoute();
   const { meetingId } = route.params;
 

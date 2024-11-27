@@ -10,7 +10,7 @@ import { PermissionsAndroid, Platform } from 'react-native';
 
 
 const FieldMeetingScreen = ({ navigation }) => {
-  const apiurl = 'http://192.168.1.5:3000'
+  const apiurl = 'http://192.168.1.13:3000'
 
   const [meetings, setMeetings] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -38,7 +38,6 @@ const FieldMeetingScreen = ({ navigation }) => {
         }
       }
     };
-
 
     requestLocationPermission();
   }, []);
@@ -360,6 +359,3 @@ const styles = StyleSheet.create({
 
 
 export default FieldMeetingScreen;
-
-
-

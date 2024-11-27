@@ -13,7 +13,6 @@ var imagekit = new ImageKit({
 
 const GetAllMeetings = async (req, res) => {
   try {
-    // console.log('see')
     const userId = req.session.user.id;
     const meetings = await DayPlans.findAll({
       raw: true,
@@ -61,7 +60,7 @@ const AddMeeting = async (req, res) => {
 
 const CheckInMeeting = async (req, res) => {
   const { day_plan_id, location } = req.body;
-  console.log(day_plan_id, location, "seee them")
+
   try {
     const userId = req.session.user.id;
 
@@ -95,7 +94,6 @@ const CheckOutStatus = async (req, res) => {
       raw: true,
       where: { user_id: userId, day_plan_id: dayPlanId, check_in_time: { [Op.not]: null } },
     });
-    console.log(existingLog, 'check karna')
 
     if (existingLog) {
       res.status(200).json({ isCheckedIn: true });
@@ -143,7 +141,6 @@ const CheckOutMeeting = async (req, res) => {
 
 const UpdateMeeting = async (req, res) => {
   try {
-    console.log(req.body, 'check the body elements');
 
     const {
       companyName,
@@ -185,8 +182,6 @@ const UpdateMeeting = async (req, res) => {
       image: meetingImage,
       follow_up_date: nextFollowUpDate,
     };
-
-    // console.log(meetingDetails);
 
     await FieldMeetingDetails.create(meetingDetails);
 

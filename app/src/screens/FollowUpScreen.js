@@ -5,7 +5,6 @@ import axios from 'axios'; // For making API calls
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
-
 const FollowUpScreen = ({ navigation }) => {
   const [selectedDate, setSelectedDate] = useState(moment().format('YYYY-MM-DD'));
   const [followUps, setFollowUps] = useState([]);
@@ -13,7 +12,7 @@ const FollowUpScreen = ({ navigation }) => {
   const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [modalContent, setModalContent] = useState('');
-  const apiurl = 'http://192.168.1.5:3000';
+  const apiurl = 'http://192.168.1.13:3000';
 
   useEffect(() => {
 
@@ -48,7 +47,6 @@ const FollowUpScreen = ({ navigation }) => {
     const url = `tel:${phoneNumber}`;
     Linking.openURL(url).catch((err) => console.error('Failed to open dialer', err));
   };
-
 
   const getDates = () => {
     const today = moment().format('YYYY-MM-DD');

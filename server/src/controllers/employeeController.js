@@ -4,50 +4,74 @@ require('dotenv').config();
 
 const GetEmployeeReport = async (req, res) => {
     try {
-        const userId = req.session.user.id;  // Assuming user ID is stored in session
+        const userId = req.session.user.id;
         const currentDate = new Date();
 
-        // Get all the day plans (meetings) added by the user
+        // Get the start of the current week (Sunday)
+        const startOfWeek = new Date(currentDate);
+        startOfWeek.setDate(currentDate.getDate() - currentDate.getDay());
+        startOfWeek.setHours(0, 0, 0, 0);
+
+        const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+
+        // Get all the day plans (meetings) added by the user during this week
         const meetings = await DayPlans.findAll({
             raw: true,
-            where: { added_by: userId },
+            where: {
+                added_by: userId,
+                createdAt: {
+                    [Sequelize.Op.between]: [startOfWeek, currentDate], // Limit data to current week until today
+                },
+            },
             attributes: ['createdAt'],
         });
 
+
         if (!meetings || meetings.length === 0) {
-            return res.status(404).json({ message: 'No meetings found for the employee' });
+            return res.status(404).json({ message: 'No meetings found for the employee this week' });
         }
 
-        // Initialize weekly and monthly report data
-        let weeklyReport = [
-            { id: 1, day: 'Sunday', meetings: 0 },
-            { id: 2, day: 'Monday', meetings: 0 },
-            { id: 3, day: 'Tuesday', meetings: 0 },
-            { id: 4, day: 'Wednesday', meetings: 0 },
-            { id: 5, day: 'Thursday', meetings: 0 },
-            { id: 6, day: 'Friday', meetings: 0 },
-            { id: 7, day: 'Saturday', meetings: 0 },
-        ];
-        let monthlyReport = 0;
+        const monthlyMeetings = await DayPlans.findAll({
+            raw: true,
+            where: {
+                added_by: userId,
+                createdAt: {
+                    [Sequelize.Op.between]: [startOfMonth, currentDate], // Limit data to the current month until today
+                },
+            },
+            attributes: ['createdAt'],
+        });
 
-        // Loop through meetings to populate weekly and monthly reports
+        // Initialize weekly report data (Sunday to Saturday)
+        let weeklyReport = [
+            { id: 0, day: 'Sunday', meetings: 0 },
+            { id: 1, day: 'Monday', meetings: 0 },
+            { id: 2, day: 'Tuesday', meetings: 0 },
+            { id: 3, day: 'Wednesday', meetings: 0 },
+            { id: 4, day: 'Thursday', meetings: 0 },
+            { id: 5, day: 'Friday', meetings: 0 },
+            { id: 6, day: 'Saturday', meetings: 0 },
+        ];
+
+        // Loop through meetings to populate weekly report
         meetings.forEach((meeting) => {
-            const meetingDate = new Date(meeting.createdAt);  // Use createdAt for report generation
-            const dayOfWeek = meetingDate.getDay();  // Get the day of the week (0=Sunday, 6=Saturday)
-            const monthYear = `${meetingDate.getFullYear()}-${meetingDate.getMonth() + 1}`; // e.g., "2024-11" for November
+            const meetingDate = new Date(meeting.createdAt); // Use createdAt for report generation
+            const dayOfWeek = meetingDate.getDay(); // Get the day of the week (0=Sunday, 6=Saturday)
 
             // Weekly report: Increment meetings count for the corresponding day of the week
-            weeklyReport[dayOfWeek].meetings += 1;
-
-            // Monthly report: Increment total meeting count for the month
-            monthlyReport += 1;
+            if (dayOfWeek <= currentDate.getDay()) {
+                // Include only days up to today
+                weeklyReport[dayOfWeek].meetings += 1;
+            }
         });
+
+        const monthlyReport = monthlyMeetings.length;
 
         return res.status(200).json({
             message: 'Employee data retrieved successfully',
             employee: {
                 weeklyReport,
-                monthlyReport,  // Send the total meetings for the month (a number)
+                monthlyReport
             },
         });
     } catch (error) {
@@ -58,10 +82,9 @@ const GetEmployeeReport = async (req, res) => {
 
 const GetCustomDateEmployeeReport = async (req, res) => {
     try {
-        const { start, end } = req.query; // Extracting start and end dates from the query
-        const userId = req.session?.user?.id; // Assuming user ID is stored in session
+        const { start, end } = req.query;
+        const userId = req.session?.user?.id;
 
-        // Validate input
         if (!start || !end) {
             return res.status(400).json({ message: 'Start and end dates are required.' });
         }
@@ -70,20 +93,22 @@ const GetCustomDateEmployeeReport = async (req, res) => {
         const startDateTime = `${start} 00:00:00`;
         const endDateTime = `${end} 23:59:59`;
 
-        console.log(req.query, 'this is the query params'); // Log query parameters for debugging
-
         // Query the database
-        const employeeData = await DayPlans.count({
+        const employeeData = await DayPlans.findAll({
             raw: true,
             where: {
                 added_by: userId,
                 createdAt: {
-                    [Op.between]: [startDateTime, endDateTime], // Filter by datetime range
+                    [Op.between]: [startDateTime, endDateTime],
                 },
             },
+            include: [
+                {
+                    model: FieldMeetingDetails,
+                    as: 'meetingDetails'
+                }
+            ]
         });
-
-        console.log(employeeData, 'this is the fetched employee data'); // Log result for debugging
 
         // Handle no data case
         if (!employeeData || employeeData.length === 0) {
@@ -104,4 +129,68 @@ const GetCustomDateEmployeeReport = async (req, res) => {
     }
 };
 
-module.exports = { GetEmployeeReport, GetCustomDateEmployeeReport }
+const GetDayMeetingsDeatils = async (req, res) => {
+    try {
+        const userId = req.session.user.id;
+        const day = req.params.day;
+
+        // Map day names to numbers (0 = Sunday, 1 = Monday, ...)
+        const dayMap = {
+            Sunday: 0,
+            Monday: 1,
+            Tuesday: 2,
+            Wednesday: 3,
+            Thursday: 4,
+            Friday: 5,
+            Saturday: 6
+        };
+
+        const targetDay = dayMap[day];
+        if (targetDay === undefined) {
+            return res.status(400).json({ message: 'Invalid day provided' });
+        }
+
+        // Get the current date and start of the week
+        const now = new Date();
+        const startOfWeek = new Date(
+            now.setDate(now.getDate() - now.getDay())
+        ); // Adjust for Sunday as the first day of the week
+        startOfWeek.setHours(0, 0, 0, 0);
+
+        // Calculate the target day of the week
+        const targetDate = new Date(startOfWeek);
+        targetDate.setDate(startOfWeek.getDate() + targetDay); // Add days to startOfWeek
+
+        // Set start and end of the target day
+        const startOfDay = new Date(targetDate);
+        startOfDay.setHours(0, 0, 0, 0);
+
+        const endOfDay = new Date(targetDate);
+        endOfDay.setHours(23, 59, 59, 999);
+
+        // Query for the specific day
+        const SpecificDayMeetings = await DayPlans.findAll({
+            raw: true,
+            where: {
+                createdAt: { [Sequelize.Op.between]: [startOfDay, endOfDay] },
+                added_by: userId
+            },
+            include: [
+                {
+                    model: FieldMeetingDetails,
+                    as: 'meetingDetails'
+                }
+            ]
+        });
+
+        return res.status(200).json({
+            message: `Meetings on ${day} of this week retrieved successfully`,
+            data: SpecificDayMeetings
+        });
+    } catch (error) {
+        console.error('Error retrieving meetings:', error);
+        return res.status(500).json({ message: 'Error retrieving meetings' });
+    }
+};
+
+module.exports = { GetEmployeeReport, GetCustomDateEmployeeReport, GetDayMeetingsDeatils }

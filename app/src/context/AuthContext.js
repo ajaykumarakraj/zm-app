@@ -42,7 +42,6 @@ export const AuthProvider = ({ children }) => {
   };
 
   const userInfo = async (info) => {
-    console.log(info, 'reaching?')
     await AsyncStorage.setItem('user', JSON.stringify({ info }));
   }
 

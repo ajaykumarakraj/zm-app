@@ -8,7 +8,7 @@ import { API_URL } from '@env';
 
 
 const DayPlanScreen = ({ navigation }) => {
-  const apiurl = 'http://192.168.1.5:3000'
+  const apiurl = 'http://192.168.1.13:3000'
 
   const [meetings, setMeetings] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -213,7 +213,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 20,
     bottom: 80,
-    backgroundColor: '#007bff',
+    backgroundColor: '#0997a5',
     borderRadius: 50,
     width: 60,
     height: 60,

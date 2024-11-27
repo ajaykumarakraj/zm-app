@@ -10,7 +10,7 @@ import { API_URL } from '@env';
 
 const LoginScreen = () => {
   const { login, userInfo } = useAuth();
-  const apiurl = 'http://192.168.1.5:3000'
+  const apiurl = 'http://192.168.1.13:3000'
 
   const [phoneNumber, setPhoneNumber] = useState('');
   const [password, setPassword] = useState('');

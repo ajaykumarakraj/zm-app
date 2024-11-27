@@ -1,220 +1,229 @@
-import React, { useState } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, FlatList, ActivityIndicator, ScrollView } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { 
+    StyleSheet, 
+    Text, 
+    View, 
+    TouchableOpacity, 
+    FlatList, 
+    ActivityIndicator, 
+    ScrollView 
+} from 'react-native';
+import axios from 'axios';
 import { Calendar } from 'react-native-calendars';
+import LinearGradient from 'react-native-linear-gradient';
 
 const SalesReportScreen = () => {
-  const [showCalendar, setShowCalendar] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [range, setRange] = useState({ startDate: '', endDate: '' });
-  const [customSales, setCustomSales] = useState(0);
+    const [showCalendar, setShowCalendar] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [range, setRange] = useState({ startDate: '', endDate: '' });
+    const [customSales, setCustomSales] = useState(0);
+    const [weeklyReport, setWeeklyReport] = useState([]);
+    const [monthlyReport, setMonthlyReport] = useState(0);
 
-  const weeklySalesData = [
-    { id: '1', day: 'Monday', sales: 12000 },
-    { id: '2', day: 'Tuesday', sales: 15000 },
-    { id: '3', day: 'Wednesday', sales: 18000 },
-    { id: '4', day: 'Thursday', sales: 14000 },
-    { id: '5', day: 'Friday', sales: 20000 },
-    { id: '6', day: 'Saturday', sales: 25000 },
-    { id: '7', day: 'Sunday', sales: 30000 },
-  ];
+    const apiurl = 'http://192.168.1.13:3000';
 
-  const monthlySales = 540000; // Example monthly sales data
+    useEffect(() => {
+        const fetchSalesReport = async () => {
+            try {
+                const response = await axios.get(`${apiurl}/sales/getSalesReport`);
+                const data = response.data.sales;
 
-  const fetchCustomSales = async (start, end) => {
-    setLoading(true);
-    setCustomSales(0); // Reset sales for new request
-    try {
-      // Replace with your actual API URL and parameters
-      const response = await fetch(
-        `https://example.com/sales?start=${start}&end=${end}`
-      );
-      const data = await response.json();
+                if (data) {
+                    setWeeklyReport(data?.weeklyReport || []);
+                    setMonthlyReport(data?.monthlyReport || 0);
+                }
+            } catch (error) {
+                console.error('Error fetching sales report:', error);
+            }
+        };
 
-      // Assuming API returns `totalSales` in the response
-      setCustomSales(data.totalSales || 0);
-    } catch (error) {
-      console.error('Error fetching custom sales:', error);
-      setCustomSales(0);
-    } finally {
-      setLoading(false);
-    }
-  };
+        fetchSalesReport();
+    }, []);
 
-  const handleDayPress = (day) => {
-    const { dateString } = day;
-    if (!range.startDate || (range.startDate && range.endDate)) {
-      // Set start date or reset if range is completed
-      setRange({ startDate: dateString, endDate: '' });
-    } else {
-      // Set end date and fetch data
-      setRange((prev) => ({
-        ...prev,
-        endDate: dateString,
-      }));
+    const fetchCustomSalesReport = async (start, end) => {
+        setLoading(true);
+        setCustomSales(0);
+        try {
+            const customSalesReport = await axios.get(`${apiurl}/sales/getCustomDateSalesReport?start=${start}&end=${end}`);
+            const totalSales = customSalesReport.data.data;
 
-      fetchCustomSales(range.startDate, dateString);
-      setShowCalendar(false); // Close calendar
-    }
-  };
+            setCustomSales(totalSales || 0);
+        } catch (error) {
+            console.error('Error fetching custom sales report:', error);
+            setCustomSales(0);
+        } finally {
+            setLoading(false);
+        }
+    };
 
-  return (
-    <ScrollView contentContainerStyle={styles.scrollContainer}>
-      <View style={styles.container}>
-        {/* Header */}
-        <Text style={styles.header}>Employee Sales Reports</Text>
+    const handleDayPress = (day) => {
+        const { dateString } = day;
+        if (!range.startDate || (range.startDate && range.endDate)) {
+            setRange({ startDate: dateString, endDate: '' });
+        } else {
+            setRange((prev) => {
+                const newRange = { ...prev, endDate: dateString };
+                fetchCustomSalesReport(prev.startDate, dateString);
+                return newRange;
+            });
+            setShowCalendar(false);
+        }
+    };
 
-        {/* Weekly Sales Report */}
-        <View style={styles.column}>
-          <Text style={styles.columnHeader}>Weekly Sales</Text>
-          <FlatList
-            data={weeklySalesData}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }) => (
-              <View style={styles.row}>
-                <Text style={styles.rowText}>{item.day}</Text>
-                <Text style={styles.rowText}>₹{item.sales}</Text>
-              </View>
-            )}
-          />
-        </View>
+    return (
+        <LinearGradient colors={['#F0F8FF', '#E6E6FA']} style={styles.container}>
+            <ScrollView>
+                {/* Header */}
+                <Text style={styles.header}>📊 Sales Reports</Text>
 
-        {/* Monthly Sales Report */}
-        <View style={styles.column}>
-          <Text style={styles.columnHeader}>Monthly Sales</Text>
-          <Text style={styles.monthlySales}>₹{monthlySales}</Text>
-        </View>
+                {/* Weekly Report */}
+                <View style={styles.card}>
+                    <Text style={styles.cardHeader}>Weekly Sales Report</Text>
+                    {weeklyReport.length === 0 ? (
+                        <Text style={styles.placeholderText}>No weekly data available.</Text>
+                    ) : (
+                        <FlatList
+                            data={weeklyReport}
+                            keyExtractor={(item, index) => item.id?.toString() || index.toString()}
+                            renderItem={({ item }) => (
+                                <View style={styles.row}>
+                                    <Text style={styles.rowText}>{item.day || 'N/A'}</Text>
+                                    <Text style={styles.rowValue}>{item.sales || 0}</Text>
+                                </View>
+                            )}
+                        />
+                    )}
+                </View>
 
-        {/* Custom Date Range Picker */}
-        <TouchableOpacity
-          style={styles.customRangeButton}
-          onPress={() => setShowCalendar(!showCalendar)}
-        >
-          <Text style={styles.buttonText}>Select Custom Date Range</Text>
-        </TouchableOpacity>
+                {/* Monthly Report */}
+                <View style={styles.card}>
+                    <Text style={styles.cardHeader}>Monthly Sales Report</Text>
+                    <Text style={styles.monthlySales}>{monthlyReport} Sales</Text>
+                </View>
 
-        {/* Calendar for Date Range Selection */}
-        {showCalendar && (
-          <Calendar
-            onDayPress={handleDayPress}
-            markingType={'period'}
-            markedDates={{
-              [range.startDate]: { startingDay: true, color: '#2196F3', textColor: 'white' },
-              [range.endDate]: { endingDay: true, color: '#2196F3', textColor: 'white' },
-              ...(range.startDate &&
-                range.endDate &&
-                getDatesBetween(range.startDate, range.endDate).reduce((acc, date) => {
-                  acc[date] = { color: '#90CAF9', textColor: 'white' };
-                  return acc;
-                }, {})),
-            }}
-          />
-        )}
+                {/* Custom Range Selector */}
+                <TouchableOpacity
+                    style={styles.customRangeButton}
+                    onPress={() => setShowCalendar(!showCalendar)}
+                >
+                    <LinearGradient colors={['#2193b0', '#6dd5ed']} style={styles.buttonGradient}>
+                        <Text style={styles.buttonText}>Select Custom Date Range</Text>
+                    </LinearGradient>
+                </TouchableOpacity>
 
-        {/* Selected Date Range */}
-        {range.startDate && range.endDate && (
-          <Text style={styles.dateRange}>
-            Selected Range: {range.startDate} - {range.endDate}
-          </Text>
-        )}
+                {/* Calendar */}
+                {showCalendar && (
+                    <View style={styles.card}>
+                        <Calendar
+                            onDayPress={handleDayPress}
+                            markingType={'period'}
+                            markedDates={{
+                                [range.startDate]: { startingDay: true, color: '#2193b0', textColor: 'white' },
+                                [range.endDate]: { endingDay: true, color: '#2193b0', textColor: 'white' },
+                            }}
+                        />
+                    </View>
+                )}
 
-        {/* Display Loading or Sales Data */}
-        {loading ? (
-          <ActivityIndicator size="large" color="#2196F3" style={{ marginTop: 20 }} />
-        ) : (
-          range.startDate &&
-          range.endDate && (
-            <Text style={styles.customSales}>
-              Custom Range Sales: ₹{customSales}
-            </Text>
-          )
-        )}
-      </View>
-    </ScrollView>
-  );
+                {/* Custom Sales Report */}
+                {range.startDate && range.endDate && (
+                    <View style={styles.card}>
+                        <Text style={styles.rangeText}>
+                            Selected Range: {range.startDate} - {range.endDate}
+                        </Text>
+                        {loading ? (
+                            <ActivityIndicator size="large" color="#2193b0" />
+                        ) : (
+                            <Text style={styles.customSalesText}>
+                                Custom Range Sales: {customSales} Sales
+                            </Text>
+                        )}
+                    </View>
+                )}
+            </ScrollView>
+        </LinearGradient>
+    );
 };
 
 export default SalesReportScreen;
 
-// Utility function to get dates between two dates
-const getDatesBetween = (startDate, endDate) => {
-  const dates = [];
-  let currentDate = new Date(startDate);
-  const stopDate = new Date(endDate);
-
-  while (currentDate <= stopDate) {
-    dates.push(currentDate.toISOString().split('T')[0]);
-    currentDate.setDate(currentDate.getDate() + 1);
-  }
-
-  return dates;
-};
-
 const styles = StyleSheet.create({
-  scrollContainer: {
-    flexGrow: 1,
-  },
-  container: {
-    flex: 1,
-    backgroundColor: '#f9f9f9',
-    padding: 20,
-  },
-  header: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  column: {
-    backgroundColor: '#fff',
-    padding: 15,
-    borderRadius: 8,
-    marginBottom: 20,
-    elevation: 3,
-  },
-  columnHeader: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 10,
-  },
-  row: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 10,
-  },
-  rowText: {
-    fontSize: 16,
-    color: '#555',
-  },
-  monthlySales: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#4CAF50',
-    textAlign: 'center',
-    marginVertical: 20,
-  },
-  customRangeButton: {
-    backgroundColor: '#2196F3',
-    paddingVertical: 15,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  buttonText: {
-    fontSize: 16,
-    color: '#fff',
-    fontWeight: '600',
-  },
-  dateRange: {
-    marginTop: 20,
-    fontSize: 16,
-    textAlign: 'center',
-    color: '#333',
-  },
-  customSales: {
-    marginTop: 20,
-    fontSize: 18,
-    textAlign: 'center',
-    color: '#4CAF50',
-    fontWeight: 'bold',
-  },
+    container: {
+        flex: 1,
+    },
+    header: {
+        fontSize: 26,
+        fontWeight: 'bold',
+        textAlign: 'center',
+        marginVertical: 20,
+        color: '#4B0082',
+    },
+    card: {
+        backgroundColor: '#fff',
+        marginHorizontal: 15,
+        marginVertical: 10,
+        borderRadius: 12,
+        padding: 15,
+        elevation: 4,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+    },
+    cardHeader: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: '#4B0082',
+        marginBottom: 10,
+    },
+    row: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginVertical: 8,
+    },
+    rowText: {
+        fontSize: 16,
+        color: '#555',
+    },
+    rowValue: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: '#4B0082',
+    },
+    placeholderText: {
+        fontSize: 16,
+        textAlign: 'center',
+        color: '#AAA',
+    },
+    monthlySales: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        color: '#2193b0',
+        textAlign: 'center',
+    },
+    customRangeButton: {
+        marginHorizontal: 15,
+        borderRadius: 10,
+        overflow: 'hidden',
+    },
+    buttonGradient: {
+        paddingVertical: 15,
+        alignItems: 'center',
+    },
+    buttonText: {
+        fontSize: 16,
+        color: 'white',
+        fontWeight: 'bold',
+    },
+    rangeText: {
+        fontSize: 16,
+        textAlign: 'center',
+        color: '#333',
+    },
+    customSalesText: {
+        fontSize: 18,
+        textAlign: 'center',
+        fontWeight: 'bold',
+        color: '#4CAF50',
+    },
 });

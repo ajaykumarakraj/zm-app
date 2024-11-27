@@ -5,6 +5,7 @@ const cors = require('cors');
 const AuthRoutes = require('./src/routes/authRoutes')
 const FieldRoutes = require('./src/routes/fieldRoutes')
 const EmployeeRoutes = require('./src/routes/employeeRoutes')
+const SalesRoutes = require('./src/routes/salesRoutes')
 const sessionMiddleware = require('./utilis/session');
 const { Connection } = require('./src/models');
 const app = express()
@@ -36,6 +37,7 @@ app.get('/', (req, res) => {
 app.use('/auth', AuthRoutes);
 app.use('/field-meeting', FieldRoutes);
 app.use('/employee', EmployeeRoutes);
+app.use('/sales', SalesRoutes);
 
 // Start the server
 Connection().then(() => {
